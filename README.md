@@ -9,7 +9,6 @@ A financial order matching engine built in Python. It supports multiple order ty
 - **Pegged orders** — track the best bid or best offer dynamically
 - **Cancel & amend** — remove or modify resting orders (amended orders lose time priority)
 - **Price-time priority** — orders are matched by best price first, then by arrival sequence
-- **Trade aggregation** — consecutive fills at the same price are merged for cleaner output
 
 ## Usage
 
@@ -41,7 +40,7 @@ Trade, price: 100, qty: 5
   Best bid: 100  Best offer: None
 --- SELL ---
 --- BUY ---
-  id_1: 5 @ 100
+  5 @ 100
 >>> quit
 ```
 
