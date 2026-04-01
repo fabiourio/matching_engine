@@ -28,6 +28,8 @@ python main.py
 | `print book` | `print book` | Display the order book |
 | `quit` | `quit` | Exit |
 
+The engine has a `detailed` flag (set in `main.py`). When off, trade output is aggregated and partial market rejections are hidden. Order IDs are always shown on creation.
+
 ### Example session
 
 ```

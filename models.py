@@ -72,9 +72,7 @@ class EngineEvent:
                 assert self.side is not None
                 assert self.price is not None
                 assert self.qty is not None
-                if detailed:
-                    return f"Order created: {self.side.value} {self.qty} @ {self.price} {self.order_id}"
-                return f"Order created: {self.side.value} {self.qty} @ {self.price}"
+                return f"Order created: {self.side.value} {self.qty} @ {self.price} {self.order_id}"
             case EventType.TRADE:
                 assert self.price is not None
                 assert self.qty is not None
