@@ -2,12 +2,12 @@ from parser import (AmendCommand, CancelCommand, LimitCommand,
                     MarketCommand, PeggedCommand, PrintBookCommand,
                     QuitCommand, parse_command)
 from engine import MatchingEngine
-from models import aggregate_trades
+from models import EventType, aggregate_trades
 
 
 def main():
     engine = MatchingEngine()
-    detailed = True
+    detailed = False
 
     handlers = {
         LimitCommand: lambda c: engine.submit_limit(c.side, c.price, c.qty),
@@ -30,6 +30,7 @@ def main():
             events = handlers[type(cmd)](cmd)
             if not detailed:
                 events = aggregate_trades(events)
+                events = [e for e in events if e.event_type != EventType.ORDER_REJECTED]
             for event in events:
                 print(event.render(detailed))
 

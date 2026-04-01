@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from decimal import Decimal
 from typing import Optional
 
@@ -152,7 +150,11 @@ class OrderBook:
 
         priced = [e for e in entries if e[0] is not None]
         unpriced = [e for e in entries if e[0] is None]
-        priced.sort(key = lambda e: (-e[0], e[1]))
+        if book_side.side == Side.BUY:
+            sign = -1
+        else:
+            sign = 1
+        priced.sort(key = lambda e: (sign * e[0], e[1]))
         unpriced.sort(key = lambda e: e[1])
         return priced + unpriced
 

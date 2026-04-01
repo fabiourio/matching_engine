@@ -19,7 +19,7 @@ class MatchingEngine:
 
     def _next_id(self) -> str:
         self._order_counter += 1
-        return f"O{self._order_counter}"
+        return f"id_{self._order_counter}"
 
     def submit_limit(self, side: Side, price: Decimal, qty: int) -> list[EngineEvent]:
         order = Order(
@@ -79,9 +79,12 @@ class MatchingEngine:
         if order is None or not order.active:
             return [EngineEvent(event_type = EventType.ERROR,
                                 message = f"Order {order_id} not found or inactive")]
-        if order.order_type != OrderType.LIMIT:
+        if order.order_type == OrderType.MARKET:
             return [EngineEvent(event_type = EventType.ERROR,
-                                message = "Only limit orders can be amended")]
+                                message = "Market orders cannot be amended")]
+        if order.order_type == OrderType.PEGGED and new_price is not None:
+            return [EngineEvent(event_type = EventType.ERROR,
+                                message = "Cannot set price on a pegged order")]
 
         # if amended, order loses priority
         self.book.side_of(order.side).remove_order(order)
@@ -95,7 +98,10 @@ class MatchingEngine:
 
         events = self._match(order)
         if order.qty > 0:
-            self.book.side_of(order.side).add_limit(order)
+            if order.order_type == OrderType.LIMIT:
+                self.book.side_of(order.side).add_limit(order)
+            else:
+                self.book.side_of(order.side).add_pegged(order)
             events.append(EngineEvent(
                 event_type = EventType.ORDER_AMENDED,
                 order_id = order_id, side = order.side, price = order.price, qty = order.qty,
@@ -130,6 +136,7 @@ class MatchingEngine:
 
         is_buy = (book_side.side == Side.BUY)
 
+        # get the best from each - limit, peg to bid, peg to offer - and sort
         candidates: list[tuple[Decimal, int, Order]] = []
 
         # best limit price

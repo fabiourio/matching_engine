@@ -17,6 +17,12 @@ class MarketCommand:
     qty: int
 
 @dataclass
+class PeggedCommand:
+    side: Side
+    peg_side: PegSide
+    qty: int
+    
+@dataclass
 class CancelCommand:
     order_id: str
 
@@ -25,12 +31,6 @@ class AmendCommand:
     order_id: str
     new_price: Optional[Decimal] = None
     new_qty: Optional[int] = None
-
-@dataclass
-class PeggedCommand:
-    side: Side
-    peg_side: PegSide
-    qty: int
 
 @dataclass
 class PrintBookCommand:
@@ -95,7 +95,7 @@ def _parse_cancel(tokens: list[str]) -> CancelCommand:
 def _parse_pegged(tokens: list[str]) -> PeggedCommand:
     if len(tokens) != 4:
         raise ValueError("Usage: peg <buy|sell> <bid|offer> <qty>")
-    return PeggedCommand(side=_side(tokens[1]), peg_side=_peg_side(tokens[2]), qty=_qty(tokens[3]))
+    return PeggedCommand(side = _side(tokens[1]), peg_side = _peg_side(tokens[2]), qty = _qty(tokens[3]))
 
 
 def _parse_amend(tokens: list[str]) -> AmendCommand:
