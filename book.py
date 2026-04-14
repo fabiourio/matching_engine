@@ -137,26 +137,31 @@ class OrderBook:
 
     # all orders sorted for display
     def _collect_side(self, book_side: BookSide) -> list[tuple[Optional[Decimal], int, Order, str]]:
-        entries: list[tuple[Optional[Decimal], int, Order, str]] = []
-        for price in book_side._prices:
-            for order in book_side._levels[price]:
-                entries.append((price, order.seq, order, "limit"))
-
         bid, offer = self.best_bid, self.best_offer
-        for order in book_side.peg_bid:
-            entries.append((bid, order.seq, order, "peg bid"))
-        for order in book_side.peg_offer:
-            entries.append((offer, order.seq, order, "peg offer"))
+        sign = -1 if book_side.side == Side.BUY else 1
 
-        priced = [e for e in entries if e[0] is not None]
-        unpriced = [e for e in entries if e[0] is None]
-        if book_side.side == Side.BUY:
-            sign = -1
-        else:
-            sign = 1
-        priced.sort(key = lambda e: (sign * e[0], e[1]))
-        unpriced.sort(key = lambda e: e[1])
-        return priced + unpriced
+        lim = ((sign * p, o.seq, p, o, "limit")
+               for p in (reversed(book_side._prices) if sign == -1 else book_side._prices)
+               for o in book_side._levels[p])
+        pb = ((sign * bid, o.seq, bid, o, "peg bid") for o in book_side.peg_bid) if bid is not None else iter(())
+        po = ((sign * offer, o.seq, offer, o, "peg offer") for o in book_side.peg_offer) if offer is not None else iter(())
+
+        its = [lim, pb, po]
+        heads = [next(it, None) for it in its]
+        out: list[tuple[Optional[Decimal], int, Order, str]] = []
+        while any(h is not None for h in heads):
+            i = min((j for j, h in enumerate(heads) if h is not None), key = lambda j: heads[j])
+            _, _, p, o, t = heads[i]
+            out.append((p, o.seq, o, t))
+            heads[i] = next(its[i], None)
+
+        tail: list[tuple[Optional[Decimal], int, Order, str]] = []
+        if bid is None:
+            tail += [(None, o.seq, o, "peg bid") for o in book_side.peg_bid]
+        if offer is None:
+            tail += [(None, o.seq, o, "peg offer") for o in book_side.peg_offer]
+        tail.sort(key = lambda e: e[1])
+        return out + tail
 
     def format_book(self, detailed: bool = True) -> str:
         lines: list[str] = []
