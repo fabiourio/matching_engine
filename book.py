@@ -120,6 +120,8 @@ class OrderBook:
     def __init__(self):
         self.buy = BookSide(Side.BUY)
         self.sell = BookSide(Side.SELL)
+        self._current_bid: Optional[Decimal] = None
+        self._current_offer: Optional[Decimal] = None
 
     def side_of(self, side: Side) -> BookSide:
         if side == Side.BUY:
@@ -129,11 +131,25 @@ class OrderBook:
 
     @property
     def best_bid(self) -> Optional[Decimal]:
-        return self.buy.best_price
+        live = self.buy.best_price
+        if live is not None:
+            self._current_bid = live
+            return live
+        if self.buy.peg_bid or self.sell.peg_bid:
+            return self._current_bid
+        self._current_bid = None
+        return None
 
     @property
     def best_offer(self) -> Optional[Decimal]:
-        return self.sell.best_price
+        live = self.sell.best_price
+        if live is not None:
+            self._current_offer = live
+            return live
+        if self.buy.peg_offer or self.sell.peg_offer:
+            return self._current_offer
+        self._current_offer = None
+        return None
 
     # all orders sorted for display
     def _collect_side(self, book_side: BookSide) -> list[tuple[Optional[Decimal], int, Order, str]]:
