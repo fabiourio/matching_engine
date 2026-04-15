@@ -7,7 +7,7 @@ from models import EventType, aggregate_trades
 
 def main():
     engine = MatchingEngine()
-    detailed = False
+    detailed = True
 
     handlers = {
         LimitCommand: lambda c: engine.submit_limit(c.side, c.price, c.qty),

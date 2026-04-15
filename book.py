@@ -138,7 +138,7 @@ class OrderBook:
     # all orders sorted for display
     def _collect_side(self, book_side: BookSide) -> list[tuple[Optional[Decimal], int, Order, str]]:
         bid, offer = self.best_bid, self.best_offer
-        sign = -1 if book_side.side == Side.BUY else 1
+        sign = -1 if book_side.side == Side.BUY else 1 # so that buy gets ordered from best to worst
 
         lim = ((sign * p, o.seq, p, o, "limit")
                for p in (reversed(book_side._prices) if sign == -1 else book_side._prices)
@@ -147,7 +147,8 @@ class OrderBook:
         po = ((sign * offer, o.seq, offer, o, "peg offer") for o in book_side.peg_offer) if offer is not None else iter(())
 
         its = [lim, pb, po]
-        heads = [next(it, None) for it in its]
+        heads = [next(it, None) for it in its] # three pointers - each at beginning of each list
+        
         out: list[tuple[Optional[Decimal], int, Order, str]] = []
         while any(h is not None for h in heads):
             i = min((j for j, h in enumerate(heads) if h is not None), key = lambda j: heads[j])
@@ -155,13 +156,15 @@ class OrderBook:
             out.append((p, o.seq, o, t))
             heads[i] = next(its[i], None)
 
-        tail: list[tuple[Optional[Decimal], int, Order, str]] = []
-        if bid is None:
-            tail += [(None, o.seq, o, "peg bid") for o in book_side.peg_bid]
-        if offer is None:
-            tail += [(None, o.seq, o, "peg offer") for o in book_side.peg_offer]
-        tail.sort(key = lambda e: e[1])
-        return out + tail
+        # for unpriced pegged
+        a, b = iter(book_side.peg_bid) if bid is None else iter(()), iter(book_side.peg_offer) if offer is None else iter(())
+        ha, hb = next(a, None), next(b, None)
+        while ha is not None or hb is not None:
+            if hb is None or (ha is not None and ha.seq <= hb.seq):
+                out.append((None, ha.seq, ha, "peg bid")); ha = next(a, None)
+            else:
+                out.append((None, hb.seq, hb, "peg offer")); hb = next(b, None)
+        return out
 
     def format_book(self, detailed: bool = True) -> str:
         lines: list[str] = []
